@@ -33,14 +33,18 @@ int lread(lua_State *L)
                     struct st_cell_data	*cell = xls_cell(pws, j, k);
                     if (cell) {
                         if(cell->id == 0x0201) {
-                            printf("BLANK_CELL! [%s](%d,%d)\n", sheet_name, j, k);
+                            //printf("BLANK_CELL! [%s](%d,%d)\n", sheet_name, j, k);
                             continue;
                         }
                         const char *str = (const char *)cell->str;
                         char tmp[32];
                         sprintf(tmp, "%lf", cell->d);
                         if (!strcmp(tmp, str)) { // number
-                            lua_pushnumber(L, cell->d);
+                            if (cell->d - (long)cell->d > 0) {
+                                lua_pushnumber(L, cell->d);
+                            } else {
+                                lua_pushinteger(L, cell->d);
+                            }
                         } else { // string
                             lua_pushstring(L, str);
                         }
