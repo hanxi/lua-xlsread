@@ -5,6 +5,26 @@
 #include <xls.h>
 #include "ldef.h"
 
+static void pushnumber(lua_State *L, double d)
+{
+    if (d - (long)d > 0) {
+        lua_pushnumber(L, d);
+    } else {
+        lua_pushinteger(L, d);
+    }
+}
+
+static void pushstring(lua_State *L, const char *str, double d)
+{
+    char tmp[32];
+    sprintf(tmp, "%lf", d);
+    if (!strcmp(tmp, str)) { // number
+        pushnumber(L, d);
+    } else { // string
+        lua_pushstring(L, str);
+    }
+}
+
 int lread(lua_State *L)
 {
     int ret = 0;
@@ -32,21 +52,25 @@ int lread(lua_State *L)
                 for (k=0; k<col_count; k++) {
                     struct st_cell_data	*cell = xls_cell(pws, j, k);
                     if (cell) {
-                        if(cell->id == 0x0201) {
-                            //printf("BLANK_CELL! [%s](%d,%d)\n", sheet_name, j, k);
-                            continue;
-                        }
-                        const char *str = (const char *)cell->str;
-                        char tmp[32];
-                        sprintf(tmp, "%lf", cell->d);
-                        if (!strcmp(tmp, str)) { // number
-                            if (cell->d - (long)cell->d > 0) {
-                                lua_pushnumber(L, cell->d);
+                        if (cell->id == 0x27e || cell->id == 0x0BD || cell->id == 0x203) {
+                            pushnumber(L, cell->d);
+                        } else if (cell->id == 0x06) {
+                            // formula
+                            if (cell->l == 0) { // its a number
+                                pushnumber(L, cell->d);
                             } else {
-                                lua_pushinteger(L, cell->d);
+                                if (!strcmp((char *)cell->str, "bool")) { // its boolean, and test cell->d
+                                    lua_pushboolean(L, cell->d);
+                                } else if (!strcmp((char *)cell->str, "error")) { // formula is in error
+                                    lua_pushstring(L, "*error*");
+                                } else {  // ... cell->str is valid as the result of a string formula.
+                                    pushstring(L, (char *)cell->str, cell->d);
+                                }
                             }
-                        } else { // string
-                            lua_pushstring(L, str);
+                        } else if (cell->str != NULL) {
+                            pushstring(L, (char *)cell->str, cell->d);
+                        } else {
+                            lua_pushstring(L, "");
                         }
                         lua_rawseti(L, -2, k+1);
                     }
