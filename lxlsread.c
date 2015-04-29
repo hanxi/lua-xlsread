@@ -7,7 +7,7 @@
 
 static void pushnumber(lua_State *L, double d)
 {
-    if (d - (long)d > 0) {
+    if (d - (long)d != 0) {
         lua_pushnumber(L, d);
     } else {
         lua_pushinteger(L, d);
