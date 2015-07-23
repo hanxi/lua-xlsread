@@ -1,5 +1,8 @@
 CFLAGS := -O2 -Wall --shared -fPIC
 
+# in mac osx , use this.
+# CFLAGS := -O2 -Wall -fPIC -dynamiclib -wl,-undefined,dynamic_lookup
+
 CC = gcc -std=gnu99
 
 LUA_VERSION = 5.3.0
